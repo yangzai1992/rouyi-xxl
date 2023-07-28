@@ -1,0 +1,338 @@
+<!DOCTYPE HTML>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+	<th:block th:include="include :: header('【日志管理】列表')" />
+	<link th:href="@{/daterangepicker/daterangepicker.css}" rel="stylesheet"/>
+</head>
+<body class="gray-bg">
+    <div class="container-div">
+		<div class="row">
+			<div class="col-sm-12 search-collapse">
+				<form id="joblog-form">
+					<div class="select-list">
+						<ul>
+							<li>
+								执行器：
+								<select name="jobGroup" id="jobGroup" th:with="type=${JobGroupList}" style="width: 120px" >
+									<!--<option value=0 >所有</option>-->
+									<option th:each="JobGroup : ${type}" th:text="${JobGroup.title}" th:value="${JobGroup.id}"></option>
+								</select>
+							</li>
+							<li>
+								任务：
+								<select name="jobId" id="jobId" style="width: 120px" >
+									<option value=0 >所有</option>
+								</select>
+							</li>
+							<li>
+								状态：
+								<select name="logStatus" id="logStatus" style="width: 120px" >
+		                            <option value="-1">全部</option>
+		                            <option value="1">成功</option>
+		                            <option value="2">失败</option>
+		                            <option value="3">进行中</option>
+		                        </select>
+							</li>
+							<li>
+								调度时间： <input type="text" name="filterTime" id="filterTime" readonly style="width: 270px">
+							</li>
+							<li>
+								<a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i class="fa fa-search"></i>&nbsp;搜索</a>
+								<a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
+							</li>
+						</ul>
+					</div>
+				</form>
+			</div>
+			
+	        <div class="btn-group-sm hidden-xs" id="toolbar" role="group">
+		       <a class="btn btn-danger btn-del"  onclick="removeLog();"  shiro:hasPermission="job:joblog:remove">
+		            <i class="fa fa-remove"></i> 日志清理
+			   </a>
+	        </div>
+	        <div class="col-sm-12 select-table table-striped">
+	            <table id="bootstrap-table" data-mobile-responsive="true"></table>
+	        </div>
+    	</div>
+    </div>
+    <div th:include="include :: footer"></div>
+	<script th:src="@{/moment/moment.min.js}"></script>
+	<script th:src="@{/daterangepicker/daterangepicker.js}"></script>
+    <script th:inline="javascript">
+        var removeFlag = [[${@permission.hasPermi('job:joblog:remove')}]];
+        var prefix = ctx + "xxl/joblog";
+        var jobInfo = [[${jobInfo}]];
+        var jobId = 0;
+        if(!!jobInfo){
+          	jobId = jobInfo.id;
+          	$("#jobId").append('<option value=' + jobId + ' >' + jobInfo.jobDesc + '</option>');
+          	$("#jobId").find("option[value=" + jobId + "]").attr("selected",true); 
+          	var projectId = jobInfo.projectId;
+          	if(!!projectId){
+              	$("#projectId").find("option[value=" + projectId + "]").attr("selected",true); 
+          	}
+        }
+        var url =  prefix +'/list';
+
+        $(function() {
+
+			// filter Time
+			var rangesConf = {};
+			rangesConf['最近一小时'] = [moment().subtract(1, 'hours'), moment()];
+			rangesConf['今日'] = [moment().startOf('day'), moment().endOf('day')];
+			rangesConf['昨日'] = [moment().subtract(1, 'days').startOf('day'), moment().subtract(1, 'days').endOf('day')];
+			rangesConf['本月'] = [moment().startOf('month'), moment().endOf('month')];
+			rangesConf['上个月'] = [moment().subtract(1, 'months').startOf('month'), moment().subtract(1, 'months').endOf('month')];
+			rangesConf['最近一周'] = [moment().subtract(1, 'weeks').startOf('day'), moment().endOf('day')];
+			rangesConf['最近一月'] = [moment().subtract(1, 'months').startOf('day'), moment().endOf('day')];
+
+			$('#filterTime').daterangepicker({
+				autoApply:false,
+				singleDatePicker:false,
+				showDropdowns:false,        // 是否显示年月选择条件
+				timePicker: true, 			// 是否显示小时和分钟选择条件
+				timePickerIncrement: 10, 	// 时间的增量，单位为分钟
+				timePicker24Hour : true,
+				opens : 'left', //日期选择框的弹出位置
+				ranges: rangesConf,
+				locale : {
+					format: 'YYYY-MM-DD HH:mm:ss',
+					separator : ' - ',
+					customRangeLabel : '自定义' ,
+					applyLabel : '确定' ,
+					cancelLabel : '取消' ,
+					fromLabel : '起始时间' ,
+					toLabel : '结束时间' ,
+					daysOfWeek : '日,一,二,三,四,五,六'.split(',') ,        // '日', '一', '二', '三', '四', '五', '六'
+					monthNames : '一月,二月,三月,四月,五月,六月,七月,八月,九月,十月,十一月,十二月'.split(',') ,        // '一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'
+					firstDay : 1
+				},
+				startDate: rangesConf['今日'][0],
+				endDate: rangesConf['今日'][1]
+			});
+
+
+            var options = {
+                url: prefix +'/list',
+                removeUrl: prefix + "/remove",
+                modalName: "日志",
+                search: false,
+		        showExport: false,
+		    	queryParams: queryParams,
+                columns: [
+				{
+					field : 'jobId', 
+					title : '任务ID',
+					align: 'center',
+					formatter: function(value, row, index) {
+						return '<a class="logTips" href="javascript:;">' + value +
+								'<span style="display:none;">' +
+								'<h3>调度备注：</h3>执行器地址：' + row.executorAddress +
+								'<br>JobHandler：'+ row.executorHandler +
+								'<br>任务参数：'+ row.executorParam +
+								'<br>任务分片参数：' + row.executorShardingParam + '</span></a>';
+					}
+				},
+				{
+					field : 'triggerTime', 
+					title : '调度时间' ,
+					align: 'center'
+				},
+				{
+		            field: 'triggerCode',
+		            title: '调度结果',
+		            align: 'center',
+		            formatter: function(value, row, index) {
+		            	var html = value;
+						if (value == 200) {
+							html = '<span style="color: green">成功</span>';
+						} else if (value == 500) {
+							html = '<span style="color: red">失败</span>';
+						} else if (value == 0) {
+                            html = '';
+						}
+                        return html;
+		            }
+		        },
+				{
+		            field: 'triggerMsg',
+		            title: '调度备注',
+		            align: 'center',
+		        	formatter: function(value, row, index) {
+		               return value?'<a class="logTips" href="javascript:;" >查看<span style="display:none;">'+ value +'</span></a>':'无';
+		        	}   
+		        },
+				{
+		            field: 'handleTime',
+		            title: '执行时间',
+					align: 'center'
+		        },
+				{
+					field : 'handleCode', 
+					title : '执行结果',
+					align: 'center',
+					formatter: function(value, row, index) {
+						 var html = value;
+			                if (value == 200) {
+			                    html = '<span style="color: green">成功</span>';
+			                } else if (value == 500) {
+			                    html = '<span style="color: red">失败</span>';
+			                } else if (value == 501) {
+			                    html = '<span style="color: red">失败(超时)</span>';
+			                } else if (value == 502) {
+			                    html = '<span style="color: red">失败(重试)</span>';
+			                } else if (value == 0) {
+			                    html = '';
+			                }
+			                return html;
+		            }
+					
+				},
+				{
+					field : 'handleMsg', 
+					title : '执行备注',
+					align: 'center',
+					formatter: function(value, row, index) {
+						return value?'<a class="logTips" href="javascript:;" >查看<span style="display:none;">'+ value +'</span></a>':'无';
+					}
+				},
+		        {
+		            title: '操作',
+		            align: 'center',
+		            formatter: function(value, row, index) {
+		            	var actions = [];
+		            	if(row.triggerCode == 200){
+		            		actions.push('<a class="btn btn-success btn-xs" href="#" onclick="detail(\'' + row.id + '\')"><i class="fa fa-edit"></i>执行日志</a> ');
+		            		if(row.handleCode == 0){
+		            			actions.push('<a class="btn btn-success btn-xs" href="#" onclick="logKill(\'' + row.id + '\')"><i class="fa fa-edit"></i>终止任务</a> ');
+		            		}
+		            	}
+						return actions.join('');
+		            }
+		        }]
+            };
+            $.table.init(options);
+         // logTips alert
+        	$('#bootstrap-table').on('click', '.logTips', function(){
+        		var msg = $(this).find('span').html();
+        		ComAlertTec.show(msg);
+        	});
+            $("#jobGroup").on("change", function () {
+        		var jobGroup = $(this).children('option:selected').val();
+        		if(jobGroup == 0) {
+        			$("#jobId").html( '<option value= 0 >全部</option>' );
+        			return;
+        		}
+        		$.ajax({
+        			type : 'POST',
+                    async: false,   // async, avoid js invoke pagelist before jobId data init
+        			url : prefix + '/getJobsByGroup',
+        			data : {"jobGroup":jobGroup},
+        			dataType : "json",
+        			success : function(data){
+        				if (data.code == 200) {
+        					$("#jobId").html( '<option value= 0 >全部</option>' );
+        					$.each(data.content, function (n, value) {
+                                $("#jobId").append('<option value=' + value.id + ' >' + value.jobDesc + '</option>');
+                            });
+                            if ($("#jobId").attr("paramVal")){
+                                $("#jobId").find("option[value=" + $("#jobId").attr("paramVal") + "]").attr("selected",true);
+                            }
+        				} else {
+        					layer.open({
+        						title: '系统提示' ,
+                                btn: [ '确定' ],
+        						content: (data.msg || '接口异常' ),
+        						icon: '2'
+        					});
+        				}
+        			},
+        		});
+        	});
+        });
+        
+        
+     // Com Alert by Tec theme
+        var ComAlertTec = {
+        	html:function(){
+        		var html =
+        			'<div class="modal fade" id="ComAlertTec" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">' +
+        			'<div style="background-color: #fff" class="modal-dialog">' +
+        			'<div class="modal-content-tec">' +
+        			'<div class="modal-body"><div class="alert" style="color: black;"></div></div>' +
+        			'<div class="modal-footer">' +
+        			'<div class="text-center" >' +
+        			'<button type="button" class="btn btn-info ok" data-dismiss="modal" >确定</button>' +
+        			'</div>' +
+        			'</div>' +
+        			'</div>' +
+        			'</div>' +
+        			'</div>';
+        		return html;
+        	},
+        	show:function(msg, callback){
+        		// dom init
+        		if ($('#ComAlertTec').length == 0){
+        			$('body').append(ComAlertTec.html());
+        		}
+
+        		// init com alert
+        		$('#ComAlertTec .alert').html(msg);
+        		$('#ComAlertTec').modal('show');
+
+        		$('#ComAlertTec .ok').click(function(){
+        			$('#ComAlertTec').modal('hide');
+        			if(typeof callback == 'function') {
+        				callback();
+        			}
+        		});
+        	}
+        };
+     
+       function removeLog(){
+    	   var jobGroup = $('#jobGroup').val();
+   		   var jobId = $('#jobId').val();
+   		   var projectId = $('#projectId').val();
+   		   var projectText = $("#projectId").find("option:selected").text();
+   		   var jobGroupText = $("#jobGroup").find("option:selected").text();
+   		   var jobIdText = $("#jobId").find("option:selected").text();
+   		   var url = prefix +"/remove?jobId=" + jobId +"&jobGroup="+jobGroup +"&jobGroupText=" +jobGroupText +"&jobIdText=" +jobIdText +"&projectId=" + projectId+"&projectText=" +projectText;
+   		   $.modal.open("清除日志",url,600,500);
+       }
+
+       /*查看日志详情*/
+	   function detail(id) {
+		    var url = prefix + '/logDetailPage?id=' + id;
+		    createMenuItem(url, "执行日志控制台");
+	  }
+      
+      function logKill(id) {
+    	  $.modal.confirm("确定终止该任务吗？", function() {
+				$.ajax({
+					type : 'post',
+					url: prefix + '/logKill?id=' + id,
+					success : function(result) {
+						if (result.code == web_status.SUCCESS) {
+		                	$.modal.msgSuccess("终止成功");
+		                	$.table.refresh();
+		                } else {
+		                	$.modal.msgError(result.msg);
+		                }
+					}
+				});
+			});
+      }
+  	function queryParams(params) {
+		return {
+			jobId:       $("#jobId").val(),
+			filterTime:       $("#filterTime").val(),
+			pageSize:       params.limit,
+			pageNum:        params.offset / params.limit + 1,
+			searchValue:    params.search,
+			orderByColumn:  params.sort,
+			isAsc:          params.order
+		};
+	}
+    </script>
+</body>
+</html>

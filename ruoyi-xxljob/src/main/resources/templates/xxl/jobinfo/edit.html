@@ -1,0 +1,252 @@
+<!DOCTYPE HTML>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<th:block th:include="include :: header('更新任务')" />
+	<link th:href="@{/ajax/libs/summernote/summernote.css}" rel="stylesheet" />
+</head>
+<body class="white-bg">
+	<div class="wrapper wrapper-content animated fadeInRight ibox-content">
+		<form class="form-horizontal m" id="form-jobinfo-edit" th:object="${jobInfo}">
+			<input id="id" name="id" th:value="*{id}" type="hidden">
+			<p style="margin: 0 0 10px;text-align: left;border-bottom: 1px solid #e5e5e5;color: gray;">基础配置</p>
+			<div class="form-group">
+				<label  class="col-sm-2 control-label">执行器<font color="red">*</font></label>
+				<div class="col-sm-4">
+					<input  name="jobGroup" th:field="*{jobGroup}" type="hidden">
+					<select disabled class="form-control"
+							id="jobGroup" th:with="type=${JobGroupList}">
+						<option th:each="JobGroup : ${type}" th:text="${JobGroup.title}"
+								th:value="${JobGroup.id}" th:field="*{jobGroup}">></option>
+					</select>
+				</div>
+
+				<label class="col-sm-2 control-label">任务描述<font color="red">*</font></label>
+				<div class="col-sm-4">
+					<input type="text" class="form-control" name="jobDesc" th:value="*{jobDesc}" placeholder="请输入任务描述" maxlength="50" >
+				</div>
+			</div>
+			<div class="form-group">
+				<label   class="col-sm-2 control-label">负责人<font color="red">*</font></label>
+				<div class="col-sm-4"><input type="text" class="form-control" name="author" th:field="*{author}" placeholder="请输入负责人" maxlength="50" ></div>
+				<label   class="col-sm-2 control-label">报警邮件<font color="black">*</font></label>
+				<div class="col-sm-4"><input type="text" class="form-control" name="alarmEmail" th:field="*{alarmEmail}" placeholder="请输入报警邮件，多个邮件地址则逗号分隔" maxlength="100" ></div>
+			</div>
+
+			<br>
+			<p style="margin: 0 0 10px;text-align: left;border-bottom: 1px solid #e5e5e5;color: gray;">调度配置</p>
+			<div class="form-group">
+				<label  class="col-sm-2 control-label">调度类型<font color="red">*</font></label>
+				<input  name="scheduleType" th:field="*{scheduleType}" type="hidden">
+				<div class="col-sm-4">
+					<select disabled class="form-control" id="scheduleType" th:with="type=${ScheduleTypeEnum}">
+						<option th:each="scheduleType : ${type}" th:text="${scheduleType.title}" th:value="${scheduleType}" th:field="*{scheduleType}"></option>
+					</select>
+				</div>
+
+				<input type="hidden" name="scheduleConf" id="scheduleConf" th:value="*{scheduleConf}"/>
+				<div class="schedule_conf schedule_conf_NONE" style="display: none" >
+				</div>
+				<div class="schedule_conf schedule_conf_CRON" >
+					<label   class="col-sm-2 control-label">Cron<font color="red">*</font></label>
+					<div class="col-sm-4"><input type="text" class="form-control" name="schedule_conf_CRON"  th:value="*{scheduleConf}" placeholder="请输入Cron" maxlength="128" ></div>
+				</div>
+				<div class="schedule_conf schedule_conf_FIX_RATE" style="display: none" >
+					<label  class="col-sm-2 control-label">固定速度<font color="red">*</font></label>
+					<div class="col-sm-4"><input type="text" class="form-control" name="schedule_conf_FIX_RATE" th:value="*{scheduleConf}" placeholder="请输入 （ Second ）" maxlength="10" onkeyup="this.value=this.value.replace(/\D/g,'')" onafterpaste="this.value=this.value.replace(/\D/g,'')" ></div>
+				</div>
+				<div class="schedule_conf schedule_conf_FIX_DELAY" style="display: none" >
+					<label  class="col-sm-2 control-label">固定延迟<font color="red">*</font></label>
+					<div class="col-sm-4"><input type="text" class="form-control" name="schedule_conf_FIX_DELAY" th:value="*{scheduleConf}" placeholder="请输入 （ Second ）" maxlength="10" onkeyup="this.value=this.value.replace(/\D/g,'')" onafterpaste="this.value=this.value.replace(/\D/g,'')" ></div>
+				</div>
+			</div>
+
+			<br>
+			<p style="margin: 0 0 10px;text-align: left;border-bottom: 1px solid #e5e5e5;color: gray;">任务配置</p>
+
+			<div class="form-group">
+				<label   class="col-sm-2 control-label">运行模式<font color="red">*</font></label>
+				<div class="col-sm-4">
+					<input  name="glueType" th:field="*{glueType}" type="hidden">
+					<select disabled class="form-control glueType" id="glueType" th:with="type=${GlueTypeEnum}">
+						<option th:each="glueType : ${type}" th:text="${glueType.desc}"
+								th:value="${glueType}" th:field="*{glueType}"></option>
+					</select>
+				</div>
+				<label  class="col-sm-2 control-label">JobHandler<font color="red">*</font></label>
+				<div class="col-sm-4"><input type="text" class="form-control" name="executorHandler" th:field="*{executorHandler}" placeholder="请输入JobHandler" maxlength="100" ></div>
+			</div>
+
+			<div class="form-group">
+				<label  class="col-sm-2 control-label">任务参数<font color="black">*</font></label>
+				<div class="col-sm-10">
+					<textarea class="textarea form-control" name="executorParam" th:field="*{executorParam}"  placeholder="请输入任务参数" maxlength="512" style="height: 63px; line-height: 1.2;"></textarea>
+				</div>
+			</div>
+
+			<br>
+			<p style="margin: 0 0 10px;text-align: left;border-bottom: 1px solid #e5e5e5;color: gray;">高级配置</p>
+
+			<div class="form-group">
+				<label  class="col-sm-2 control-label">路由策略<font color="red">*</font></label>
+				<div class="col-sm-4">
+					<select class="form-control" name="executorRouteStrategy"
+							th:with="type=${ExecutorRouteStrategyEnum}">
+						<option th:each="executorRouteStrategy : ${type}"
+								th:text="${executorRouteStrategy.title}"
+								th:value="${executorRouteStrategy}"
+								th:field="*{executorRouteStrategy}"></option>
+					</select>
+
+				</div>
+
+				<label  class="col-sm-2 control-label">子任务ID<font color="black">*</font></label>
+				<div class="col-sm-4"><input type="text" class="form-control" name="childJobId" th:field="*{childJobId}" placeholder="请输入子任务的任务ID,如存在多个则逗号分隔" maxlength="100" ></div>
+			</div>
+
+			<div class="form-group">
+				<label class="col-sm-2 control-label">调度过期策略<font color="black">*</font></label>
+				<div class="col-sm-4">
+					<select class="form-control" name="misfireStrategy"
+							th:with="type=${MisfireStrategyEnum}">
+						<option th:each="misfireStrategy : ${type}" th:text="${misfireStrategy.title}" th:value="${misfireStrategy}" th:field="*{misfireStrategy}"></option>
+					</select>
+				</div>
+
+				<label  class="col-sm-2 control-label">阻塞处理策略<font color="red">*</font></label>
+				<div class="col-sm-4">
+					<select class="form-control" id="executorBlockStrategy" name="executorBlockStrategy"  th:with="type=${ExecutorBlockStrategyEnum}" >
+						<option th:each="executorBlockStrategy : ${type}" th:text="${executorBlockStrategy.title}" th:value="${executorBlockStrategy}" th:field="*{executorBlockStrategy}"></option>
+					</select>
+				</div>
+			</div>
+
+			<div class="form-group">
+				<label   class="col-sm-2 control-label">任务超时时间<font color="black">*</font></label>
+				<div class="col-sm-4"><input type="text" class="form-control" name="executorTimeout" th:field="*{executorTimeout}" placeholder="任务超时时间，单位秒，大于零时生效" maxlength="6" onkeyup="this.value=this.value.replace(/\D/g,'')" onafterpaste="this.value=this.value.replace(/\D/g,'')" ></div>
+				<label   class="col-sm-2 control-label">失败重试次数<font color="black">*</font></label>
+				<div class="col-sm-4"><input type="text" class="form-control" name="executorFailRetryCount" th:field="*{executorFailRetryCount}" placeholder="失败重试次数，大于零时生效" maxlength="4" onkeyup="this.value=this.value.replace(/\D/g,'')" onafterpaste="this.value=this.value.replace(/\D/g,'')" ></div>
+			</div>
+		</form>
+	</div>
+	<div th:include="include::footer"></div>
+
+	<script th:src="@{/plugins/cronGen/cronGen.js}"></script>
+	<script type="text/javascript">
+		var prefix = ctx + "xxl/jobinfo";
+		$("#form-jobinfo-edit").validate({
+			rules : {
+				jobDesc : {
+					required : true,
+					maxlength : 50
+				},
+				jobCron : {
+					required : true
+				},
+				author : {
+					required : true
+				},
+				executorTimeout : {
+					digits : true
+				},
+				executorTimeout : {
+					digits : true
+				},
+				executorFailRetryCount : {
+					digits : true
+				}
+			},
+			messages : {
+				jobDesc : {
+					required : "请输入任务描述"
+				},
+				scheduleConf : {
+					required : "请输入Cron"
+				},
+				author : {
+					required : "请输入负责人"
+				},
+				executorTimeout : {
+					digits : '请输入整数'
+				},
+				executorFailRetryCount : {
+					digits : '请输入整数'
+				}
+			}
+		});
+
+		function submitHandler() {
+			if (!$.validate.form()) {
+				return;
+			}
+			var executorTimeout = $(
+					"#form-jobinfo-edit input[name='executorTimeout']")
+					.val();
+			if (!/^\d+$/.test(executorTimeout)) {
+				executorTimeout = 0;
+			}
+			$("#form-jobinfo-add input[name='executorTimeout']").val(
+					executorTimeout);
+			var executorFailRetryCount = $(
+					"#form-jobinfo-edit input[name='executorFailRetryCount']")
+					.val();
+			if (!/^\d+$/.test(executorFailRetryCount)) {
+				executorFailRetryCount = 0;
+			}
+			$("#form-jobinfo-add input[name='executorFailRetryCount']")
+					.val(executorFailRetryCount);
+
+
+			$('#scheduleType option[value= "CRON"]').prop('selected', true);
+			// scheduleType change
+			$("#scheduleType").change(function(){
+				var scheduleType = $(this).val();
+				if(!scheduleType)return false;
+				$(this).parents("form").find(".schedule_conf").hide();
+				$(this).parents("form").find(".schedule_conf_" + scheduleType).show();
+				$('#scheduleType option[value= "CRON"]').prop('selected', true);
+
+			});
+			var scheduleType = $("#scheduleType").val();
+			var val = $("input[name='schedule_conf_" + scheduleType+"']").val();
+			$("#scheduleConf").val(val);
+			$.operate.save(prefix + "/update", $('#form-jobinfo-edit').serialize());
+		}
+
+		function init() {
+			// executorHandler
+			var $executorHandler = $(".glueType").parents("form").find(
+					"input[name='executorHandler']");
+			var glueType = $(".glueType").val();
+			if ('BEAN' != glueType) {
+				$executorHandler.val("");
+				$executorHandler.attr("readonly", "readonly");
+			} else {
+				$executorHandler.removeAttr("readonly");
+			}
+		}
+		init();
+
+		$(function () {
+			var scheduleType = "[[${jobInfo.scheduleType}]]";
+			// fill job
+			$('#scheduleType option[value= "'+ scheduleType + '"]').prop('selected', true);
+			$("#form-jobinfo-edit").find(".schedule_conf").hide();
+			$("#form-jobinfo-edit").find(".schedule_conf_" + scheduleType).show();
+
+			// scheduleType change
+			$("#scheduleType").change(function(){
+				var scheduleType = $(this).val();
+				if(!scheduleType)return false;
+				$("#form-jobinfo-edit").find(".schedule_conf").hide();
+				$("#form-jobinfo-edit").find(".schedule_conf_" + scheduleType).show();
+
+			});
+
+            // 》init-cronGen
+            $("#form-jobinfo-edit input[name='schedule_conf_CRON']").show().siblings().remove();
+            $("#form-jobinfo-edit input[name='schedule_conf_CRON']").cronGen({});
+
+		});
+	</script>
+</body>
+</html>

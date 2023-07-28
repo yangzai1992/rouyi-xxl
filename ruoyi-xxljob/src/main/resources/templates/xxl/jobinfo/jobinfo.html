@@ -1,0 +1,275 @@
+<!DOCTYPE HTML>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+	<th:block th:include="include :: header('【任务管理】列表')" />
+</head>
+<body class="gray-bg">
+    <div class="container-div">
+		<div class="row">
+			<div class="col-sm-12 search-collapse">
+				<form id="jobinfo-form">
+					<div class="select-list">
+						<ul>
+							<li>
+								执行器：
+								<select name="jobGroup" id="jobGroup" th:with="type=${JobGroupList}">
+									<option value="0">所有</option>
+									<option th:each="JobGroup : ${type}" th:text="${JobGroup.title}" th:value="${JobGroup.id}"></option>
+								</select>
+							</li>
+							<li>
+								任务状态:
+								<select name="triggerStatus" >
+									<option value="-1" >全部</option>
+									<option value="0" >停止</option>
+									<option value="1" >启动</option>
+								</select>
+							</li>
+							<li>
+								任务描述：<input type="text" name="jobDesc"/>
+							</li>
+							<li>
+								JobHandler：<input type="text" name="executorHandler"/>
+							</li>
+							<li>
+								<a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i class="fa fa-search"></i>&nbsp;搜索</a>
+								<a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
+							</li>
+						</ul>
+					</div>
+				</form>
+			</div>
+			
+	        <div class="btn-group-sm hidden-xs" id="toolbar" role="group">
+	            <select  id="glueType" th:with="type=${GlueTypeEnum}" class="hidden">
+					<option th:each="glueType : ${type}" th:text="${glueType.desc}" th:value="${glueType}"></option>
+				</select>
+		        <a class="btn btn-success" onclick="$.operate.addFull()" shiro:hasPermission="job:jobinfo:add">
+		            <i class="fa fa-plus"></i> 新增任务
+		        </a>
+	        </div>
+	        
+	        <div class="col-sm-12 select-table table-striped">
+	            <table id="bootstrap-table" data-mobile-responsive="true"></table>
+	        </div>
+    	</div>
+    </div>
+    
+    <div th:include="include :: footer"></div>
+    <script th:inline="javascript">
+        var addFlag = [[${@permission.hasPermi('job:jobinfo:add')}]];
+        var editFlag = [[${@permission.hasPermi('job:jobinfo:edit')}]];
+        var removeFlag = [[${@permission.hasPermi('job:jobinfo:remove')}]];
+        var prefix = ctx + "xxl/jobinfo";
+        $(function() {
+            var options = {
+                url: prefix + "/list",
+                createUrl: prefix + "/add",
+                updateUrl: prefix + "/edit/{id}",
+                removeUrl: prefix + "/remove?id={id}",
+                modalName: "任务",
+                search: false,
+		        showExport: false,
+                columns: [{
+		            checkbox: true
+		        },
+				{
+					field : 'id', 
+					title : '任务ID' 
+				},
+				{
+					field : 'jobDesc', 
+					title : '任务描述' 
+				},
+				{
+					field : 'glueType',
+					title : '运行模式',
+					formatter: function ( value, row, index) {
+						var glueTypeTitle = findGlueTypeTitle(row.glueType);
+                        if (row.executorHandler) {
+                            return glueTypeTitle +"：" + row.executorHandler;
+                        } else {
+                            return glueTypeTitle;
+                        }
+					}
+				},
+				{
+		            field: 'scheduleConf',
+		            title: 'Cron',
+		            align: 'center'
+		           
+		        },
+				{
+					field : 'author', 
+					title : '负责人' 
+				},
+				{
+		            field: 'triggerStatus',
+		            title: '状态',
+		            sortable: true,
+		            formatter: function (  value, row, index ) {
+                		// status
+						if ('1' == value) {
+							return '<small class="label label-success" ><i class="fa fa-clock-o"></i>RUNNING</small>';
+						} else {
+							return '<small class="label label-default" ><i class="fa fa-clock-o"></i>STOP</small>';
+						}
+                		return value;
+                	}
+		        },
+		        {
+		            title: '操作',
+		            align: 'center',
+		            formatter: function(value, row, index) {
+		            	var actions = [];
+		            	actions.push('<a class="btn btn-info btn-xs job_operate" href="#" data-type="job_trigger" onclick="jobOperate(\'job_trigger\',' + row.id + ')" data-id="' + row.id + '"><i class="fa fa-power-off"></i>执行</a> ');
+		            	if(1 == row.triggerStatus){
+							actions.push('<a class="btn btn-primary btn-xs job_operate" href="#" data-type="job_pause" onclick="jobOperate(\'job_pause\',' + row.id + ')"  data-id="' + row.id + '"><i class="fa fa-toggle-off"></i>停止</a> ');
+						}else{
+		            		actions.push('<a class="btn btn-success btn-xs job_operate" href="#"  data-type="job_resume" onclick="jobOperate(\'job_resume\',' + row.id + ')" data-id="' + row.id + '"><i class="fa fa-toggle-on"></i>启动</a> ');
+		            	}
+						actions.push('<a class="btn btn-success btn-xs ' + editFlag + '" href="#" onclick="$.operate.editFull(\'' + row.id + '\')"><i class="fa fa-edit"></i>编辑</a> ');
+
+
+                        actions.push('<a class="btn btn-success btn-xs job_operate" href="#"  data-type="job_registryinfo" onclick="jobOperate(\'job_registryinfo\',' + row.jobGroup  +  ')" data-id="' + row.id + '"><i class="fa fa-calculator"></i>注册节点</a> ');
+						if (row.scheduleType == 'CRON' || row.scheduleType == 'FIX_RATE') {
+                            actions.push('<a class="btn btn-success btn-xs job_operate" href="#"  data-type="job_nextTriggerTime" onclick="jobOperate(\'job_nextTriggerTime\',' + row.id + ',\''+ row.scheduleType +'\',\'' + row.scheduleConf + '\')" data-id="' + row.id + '"><i class="fa fa-calculator"></i>下次执行时间</a> ');
+						}
+
+                        actions.push('<a class="btn btn-warning btn-xs" href="#" onclick="joblog('+row.id+')"><i class="fa fa-history"></i>日志</a> ');
+						if('BEAN' != row.glueType){
+							var codeUrl = prefix +'/job/jobcode?jobId='+ row.id;
+                            actions.push('<a class="btn btn-warning btn-xs" href="#" onclick="jobcode('+row.id+')"><i class="fa fa-file-code-o"></i>GLUE</a> ');
+						}
+                        actions.push('<a class="btn btn-danger btn-xs ' + removeFlag + '" href="#" onclick="$.operate.remove(\'' + row.id + '\')"><i class="fa fa-remove"></i>删除</a>');
+
+						return  actions.join('');
+		            }
+
+		        }]
+            };
+            $.table.init(options);
+        });
+        
+        
+    	function findGlueTypeTitle(glueType) {
+    		var glueTypeTitle;
+    		  $("#glueType option").each(function () {
+    	            var name = $(this).val();
+    	            var title = $(this).text();
+    	            if (glueType == name) {
+    	                glueTypeTitle = title;
+    	                return false;
+    	            }
+    	        });
+            return glueTypeTitle;
+        }
+    	
+    	/*日志列表-详细*/
+		function joblog(id) {
+			var url  = ctx + 'xxl/joblog?jobId='+ id;
+		    createMenuItem(url, "任务日志");
+		}
+    	
+		/*glueIDE*/
+		function jobcode(id) {
+			var url = ctx + 'xxl/jobcode?jobId='+ id;
+		    createMenuItem(url, "glueIDE");
+		}
+		function jobOperate(type ,id,scheduleType,scheduleConf) {
+			var param = {
+				'id' : id
+			};
+			var url = '';
+			if ("job_pause" == type) {
+				url = prefix +'/stop';
+			}else if ("job_resume" == type) {
+				url = prefix +'/start';
+			}else if ("job_trigger" == type) {
+				url = prefix +'/trigger/' + id;
+			    $.modal.open("执行", url);
+			    return;
+			}else if ("job_nextTriggerTime" == type) {
+				url = prefix +'/nextTriggerTime';
+				$.ajax({
+					type : 'POST',
+					url :  url,
+					data :{
+						"scheduleType" : scheduleType,
+						"scheduleConf" : scheduleConf
+					},
+					dataType : "json",
+					success : function(data){
+
+						if (data.code != 0) {
+							layer.open({
+								title: "下次执行时间" ,
+								btn: [ "确定" ],
+								content: data.msg
+							});
+						} else {
+							var html = '<center>';
+							if (data.code == 0 && data.data) {
+								for (var index in data.data) {
+									html += '<span>' + data.data[index] + '</span><br>';
+								}
+							}
+							html += '</center>';
+
+							layer.open({
+								title: "下次执行时间" ,
+								btn: [ "确定" ],
+								content: html
+							});
+						}
+
+					}
+				});
+			    return;
+			}else if("job_registryinfo" == type){
+				url = ctx + 'xxl/jobgroup/loadById';
+				$.ajax({
+					type : 'POST',
+					url :  url,
+					data : param,
+					dataType : "json",
+					success : function(data){
+
+						if (data.code != 0) {
+							layer.open({
+								title: "注册节点" ,
+								btn: [ "确定" ],
+								content: data.msg
+							});
+						} else {
+							var html = '<div>';
+							if (data.code == 0 && data.data.registryList) {
+								for (var index in data.data.registryList) {
+									html += (parseInt(index)+1) + '. <span class="badge bg-green" >' + data.data.registryList[index] + '</span><br>';
+								}
+							}
+							html += '</div>';
+
+							layer.open({
+								title: "注册节点" ,
+								btn: [ "确定" ],
+								content: html
+							});
+						}
+
+					}
+				});
+				return;
+			}else{
+				return;
+			}
+			$.operate.post(url, param);
+		};
+
+
+		function moreShow(id) {
+			$("ul[date-id='" + id + "']").toggleClass('hidden');
+		}
+    </script>
+</body>
+</html>

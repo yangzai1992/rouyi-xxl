@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org"
+	xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<meta charset="utf-8">
+<head th:include="include :: header"></head>
+<link rel="stylesheet"
+	th:href="@{/ajax/libs/daterangepicker/daterangepicker.css}">
+<style>
+.info-box-content{
+    color: #fff !important;
+}
+.bg-aqua, .callout.callout-info, .alert-info, .label-info, .modal-info .modal-body {
+    background-color: #00c0ef !important;
+}
+
+.bg-yellow, .callout.callout-warning, .alert-warning, .label-warning, .modal-warning .modal-body {
+    background-color: #f39c12 !important;
+}
+
+.bg-green, .callout.callout-success, .alert-success, .label-success, .modal-success .modal-body {
+    background-color: #00a65a !important;
+}
+
+.info-box-content {
+    padding: 5px 10px;
+    margin-left: 90px;
+}
+.info-box {
+    display: block;
+    min-height: 90px;
+    background: #fff;
+    width: 100%;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+    border-radius: 2px;
+    margin-bottom: 15px
+}
+
+.info-box small {
+    font-size: 14px
+}
+
+.info-box .progress {
+    background: rgba(0,0,0,0.2);
+    margin: 5px -10px 5px -10px;
+    height: 2px
+}
+
+.info-box .progress,.info-box .progress .progress-bar {
+    border-radius: 0
+}
+
+.info-box .progress .progress-bar {
+    background: #fff
+}
+
+.info-box-icon {
+    border-top-left-radius: 2px;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-bottom-left-radius: 2px;
+    display: block;
+    float: left;
+    height: 90px;
+    width: 90px;
+    text-align: center;
+    font-size: 45px;
+    line-height: 90px;
+    color: #fff !important;
+    background: rgba(0,0,0,0.2)
+}
+
+.info-box-icon>img {
+    max-width: 100%
+}
+
+.info-box-content {
+    padding: 5px 10px;
+    margin-left: 90px
+}
+
+.info-box-number {
+    display: block;
+    font-weight: bold;
+    font-size: 18px
+}
+
+.progress-description,.info-box-text {
+    display: block;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis
+}
+
+.info-box-text {
+    text-transform: uppercase
+}
+
+.box-title {
+    display: inline-block;
+    font-size: 18px;
+    margin: 13px !important;
+    line-height: 1;
+}
+</style>	
+<body class="gray-bg">
+    <div class="container-div">
+		<!-- Content Header (Page header) -->
+		<section class="content-header">
+			<h2>运行报表</h2>
+		</section>
+
+		<!-- Main content -->
+		<section class="content">
+
+			<!-- 任务信息 -->
+			<div class="row">
+
+				<!-- 任务信息 -->
+				<div class="col-md-4 col-sm-6 col-xs-12">
+					<div class="info-box bg-aqua">
+						<span class="info-box-icon"><i class="fa fa-flag-o"></i></span>
+
+						<div class="info-box-content">
+							<span class="info-box-text">任务数量</span> <span
+								class="info-box-number" th:text="${jobInfoCount}"></span>
+
+							<div class="progress">
+								<div class="progress-bar" style="width: 100%"></div>
+							</div>
+							<span class="progress-description">调度中心运行的任务数量</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- 调度信息 -->
+				<div class="col-md-4 col-sm-6 col-xs-12">
+					<div class="info-box bg-yellow">
+						<span class="info-box-icon"><i class="fa fa-calendar"></i></span>
+
+						<div class="info-box-content">
+							<span class="info-box-text">调度次数</span> <span
+								class="info-box-number"th:text="${jobLogCount}"></span>
+
+							<div class="progress">
+								<div class="progress-bar" style="width: 100%"></div>
+							</div>
+							<span class="progress-description"> 调度中心触发的调度次数 </span>
+						</div>
+					</div>
+				</div>
+
+				<!-- 执行器 -->
+				<div class="col-md-4 col-sm-6 col-xs-12">
+					<div class="info-box bg-green">
+						<span class="info-box-icon"><i
+							class="fa fa-sliders"></i></span>
+
+						<div class="info-box-content">
+							<span class="info-box-text">执行器数量</span> <span
+								class="info-box-number" th:text="${executorCount}"></span>
+
+							<div class="progress">
+								<div class="progress-bar" style="width: 100%"></div>
+							</div>
+							<span class="progress-description">调度中心在线的执行器机器数量</span>
+						</div>
+					</div>
+				</div>
+
+			</div>
+
+			<!-- 调度报表：时间区间筛选，左侧折线图 + 右侧饼图 -->
+			<div class="row">
+				<div class="col-md-12">
+					<div class="box">
+						<div class="box-header with-border">
+							<h3 class="box-title">调度报表</h3>
+							<!-- tools box -->
+							<div class="pull-right box-tools">
+								<button type="button"
+									class="btn btn-primary btn-sm daterange pull-right"
+									data-toggle="tooltip" id="filterTime">
+									<i class="fa fa-calendar"></i>
+								</button>
+								<!--<button type="button" class="btn btn-primary btn-sm pull-right" data-widget="collapse" data-toggle="tooltip" title="" style="margin-right: 5px;" data-original-title="Collapse">
+                                    <i class="fa fa-minus"></i>
+                                </button>-->
+							</div>
+							<!-- /. tools -->
+
+						</div>
+						<div class="box-body">
+							<div class="row">
+								<!-- 左侧折线图 -->
+								<div class="col-md-8">
+									<div id="lineChart" style="height: 350px;"></div>
+								</div>
+								<!-- 右侧饼图 -->
+								<div class="col-md-4">
+									<div id="pieChart" style="height: 350px;"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+		</section>
+	</div>
+	<div th:include="include :: footer"></div>
+	<!-- daterangepicker -->
+	<script th:src="@{/ajax/libs/daterangepicker/moment.min.js}"></script>
+	<script th:src="@{/ajax/libs/daterangepicker/daterangepicker.js}"></script>
+	<!-- echarts -->
+	<script th:src="@{/js/plugins/echarts/echarts.common.min.js}"></script>
+	<script>
+	var prefix = ctx + "job";
+	 // filter Time
+    var rangesConf = {};
+    rangesConf['最近一小时'] = [moment().subtract(1, 'hours'), moment()];
+    rangesConf['今日'] = [moment().startOf('day'), moment().endOf('day')];
+    rangesConf['昨日'] = [moment().subtract(1, 'days').startOf('day'), moment().subtract(1, 'days').endOf('day')];
+    rangesConf['本月'] = [moment().startOf('month'), moment().endOf('month')];
+    rangesConf['上个月'] = [moment().subtract(1, 'months').startOf('month'), moment().subtract(1, 'months').endOf('month')];
+    rangesConf['最近一周'] = [moment().subtract(1, 'weeks').startOf('day'), moment().endOf('day')];
+    rangesConf['最近一月'] = [moment().subtract(1, 'months').startOf('day'), moment().endOf('day')];
+
+	$('#filterTime').daterangepicker({
+        autoApply:false,
+        singleDatePicker:false,
+        showDropdowns:false,        // 是否显示年月选择条件
+		timePicker: true, 			// 是否显示小时和分钟选择条件
+		timePickerIncrement: 10, 	// 时间的增量，单位为分钟
+        timePicker24Hour : true,
+        opens : 'left', //日期选择框的弹出位置
+		ranges: rangesConf,
+        locale : {
+            format: 'YYYY-MM-DD HH:mm:ss',
+            separator : ' - ',
+            customRangeLabel : '自定义' ,
+            applyLabel : '确定' ,
+            cancelLabel : '取消' ,
+            fromLabel : '起始时间' ,
+            toLabel : '结束时间' ,
+            daysOfWeek : '日,一,二,三,四,五,六'.split(',') ,        // '日', '一', '二', '三', '四', '五', '六'
+            monthNames : '一月,二月,三月,四月,五月,六月,七月,八月,九月,十月,十一月,十二月'.split(',') ,        // '一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'
+            firstDay : 1
+        },
+        startDate: rangesConf['今日'][0],
+        endDate: rangesConf['今日'][1]
+	}, function (start, end, label) {
+		console.log(start + end);
+       freshChartDate(start, end);
+    });
+	  freshChartDate(rangesConf['最近一月'][0], rangesConf['最近一月'][1]);
+	 /**
+     * fresh Chart Date
+     *
+     * @param startDate
+     * @param endDate
+     */
+    function freshChartDate(startDate, endDate) {
+    	startDate = startDate.format('YYYY-MM-DD HH:mm:ss');
+    	endDate = endDate.format('YYYY-MM-DD HH:mm:ss');
+        $.ajax({
+            type : 'POST',
+            url : prefix + '/chartInfo',
+            data : {
+                'startDate':startDate,
+                'endDate':endDate
+            },
+            dataType : "json",
+            success : function(data){
+                if (data.code == 200) {
+                    lineChartInit(data)
+                    pieChartInit(data);
+                } else {
+                    layer.open({
+                        title: '系统提示' ,
+                        btn: [ '确定' ],
+                        content: (data.msg || '调度报表数据加载异常' ),
+                        icon: '2'
+                    });
+                }
+            }
+        });
+    }
+
+    /**
+     * line Chart Init
+     */
+    function lineChartInit(data) {
+        var option = {
+               title: {
+                   text: '日期分布图'
+               },
+               tooltip : {
+                   trigger: 'axis',
+                   axisPointer: {
+                       type: 'cross',
+                       label: {
+                           backgroundColor: '#6a7985'
+                       }
+                   }
+               },
+               legend: {
+                   data:['成功', '失败', '进行中']
+               },
+               toolbox: {
+                   feature: {
+                       /*saveAsImage: {}*/
+                   }
+               },
+               grid: {
+                   left: '3%',
+                   right: '4%',
+                   bottom: '3%',
+                   containLabel: true
+               },
+               xAxis : [
+                   {
+                       type : 'category',
+                       boundaryGap : false,
+                       data : data.content.triggerDayList
+                   }
+               ],
+               yAxis : [
+                   {
+                       type : 'value'
+                   }
+               ],
+               series : [
+                   {
+                       name:'成功',
+                       type:'line',
+                       stack: 'Total',
+                       areaStyle: {normal: {}},
+                       data: data.content.triggerDayCountSucList
+                   },
+                   {
+                       name:'失败',
+                       type:'line',
+                       stack: 'Total',
+                       label: {
+                           normal: {
+                               show: true,
+                               position: 'top'
+                           }
+                       },
+                       areaStyle: {normal: {}},
+                       data: data.content.triggerDayCountFailList
+                   },
+                   {
+                       name:'进行中',
+                       type:'line',
+                       stack: 'Total',
+                       areaStyle: {normal: {}},
+                       data: data.content.triggerDayCountRunningList
+                   }
+               ],
+                color:['#00A65A', '#c23632', '#F39C12']
+        };
+
+        var lineChart = echarts.init(document.getElementById('lineChart'));
+        lineChart.setOption(option);
+    }
+
+    /**
+     * pie Chart Init
+     */
+    function pieChartInit(data) {
+        var option = {
+            title : {
+                text: '成功比例图' ,
+                /*subtext: 'subtext',*/
+                x:'center'
+            },
+            tooltip : {
+                trigger: 'item',
+                formatter: "{b} : {c} ({d}%)"
+            },
+            legend: {
+                orient: 'vertical',
+                left: 'left',
+                data: ['成功', '失败', '进行中']
+            },
+            series : [
+                {
+                    //name: '分布比例',
+                    type: 'pie',
+                    radius : '55%',
+                    center: ['50%', '60%'],
+                    data:[
+                        {
+                            name:'成功',
+                            value:data.content.triggerCountSucTotal
+                        },
+                        {
+                            name:'失败',
+                            value:data.content.triggerCountFailTotal
+                        },
+                        {
+                            name:'进行中',
+                            value:data.content.triggerCountRunningTotal
+                        }
+                    ],
+                    itemStyle: {
+                        emphasis: {
+                            shadowBlur: 10,
+                            shadowOffsetX: 0,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        }
+                    }
+                }
+            ],
+            color:['#00A65A', '#c23632', '#F39C12']
+        };
+        var pieChart = echarts.init(document.getElementById('pieChart'));
+        pieChart.setOption(option);
+    }
+	</script>
+</body>
+</html>

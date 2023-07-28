@@ -1,0 +1,124 @@
+<div th:fragment="glueSource">
+
+<input type="hidden" name="glueRemark" value="GLUE代码初始化" >
+<textarea name="glueSource" style="display:none;" ></textarea>
+<textarea class="glueSource_java" style="display:none;" >
+<![CDATA[
+package com.xxl.job.service.handler;
+
+import com.xxl.job.core.context.XxlJobHelper;
+import com.xxl.job.core.handler.IJobHandler;
+
+public class DemoGlueJobHandler extends IJobHandler {
+
+	@Override
+	public void execute() throws Exception {
+		XxlJobHelper.log("XXL-JOB, Hello World.");
+	}
+
+}
+]]>
+</textarea>
+
+<textarea class="glueSource_shell" style="display:none;" >
+<![CDATA[
+#!/bin/bash
+echo "xxl-job: hello shell"
+
+echo "脚本位置：$0"
+echo "任务参数：$1"
+echo "分片序号 = $2"
+echo "分片总数 = $3"
+<#--echo "参数数量：$#"
+for param in $*
+do
+    echo "参数 : $param"
+    sleep 1s
+done-->
+
+echo "Good bye!"
+exit 0
+]]>
+</textarea>
+
+<textarea class="glueSource_python" style="display:none;" >
+<![CDATA[
+	#!/usr/bin/python
+# -*- coding: UTF-8 -*-
+import time
+import sys
+
+print "xxl-job: hello python"
+
+print "脚本位置：", sys.argv[0]
+print "任务参数：", sys.argv[1]
+print "分片序号：", sys.argv[2]
+print "分片总数：", sys.argv[3]
+<#--for i in range(1, len(sys.argv)):
+	time.sleep(1)
+	print "参数", i, sys.argv[i]-->
+
+print "Good bye!"
+exit(0)
+<#--
+import logging
+logging.basicConfig(level=logging.DEBUG)
+logging.info("脚本文件：" + sys.argv[0])
+-->
+]]>
+</textarea>
+
+<textarea class="glueSource_php" style="display:none;" >
+<![CDATA[
+<?php
+
+    echo "xxl-job: hello php  \n";
+
+    echo "脚本位置：$argv[0]  \n";
+    echo "任务参数：$argv[1]  \n";
+    echo "分片序号 = $argv[2]  \n";
+    echo "分片总数 = $argv[3]  \n";
+
+    echo "Good bye!  \n";
+    exit(0);
+
+?>
+]]>
+</textarea>
+
+<textarea class="glueSource_nodejs" style="display:none;" >
+<![CDATA[
+#!/usr/bin/env node
+console.log("xxl-job: hello nodejs")
+
+var arguments = process.argv
+
+console.log("${I18n.jobinfo_script_location}: " + arguments[1])
+console.log("${I18n.jobinfo_field_executorparam}: " + arguments[2])
+console.log("${I18n.jobinfo_shard_index}: " + arguments[3])
+console.log("${I18n.jobinfo_shard_total}: " + arguments[4])
+<#--for (var i = 2; i < arguments.length; i++){
+	console.log("参数 %s = %s", (i-1), arguments[i]);
+}-->
+
+console.log("Good bye!")
+process.exit(0)
+]]>
+</textarea>
+
+<textarea class="glueSource_powershell" style="display:none;" >
+<![CDATA[
+Write-Host "xxl-job: hello powershell"
+
+Write-Host "${I18n.jobinfo_script_location}: " $MyInvocation.MyCommand.Definition
+Write-Host "${I18n.jobinfo_field_executorparam}: "
+	if ($args.Count -gt 2) { $args[0..($args.Count-3)] }
+Write-Host "${I18n.jobinfo_shard_index}: " $args[$args.Count-2]
+Write-Host "${I18n.jobinfo_shard_total}: " $args[$args.Count-1]
+
+Write-Host "Good bye!"
+exit 0
+]]>
+</textarea>
+
+</div>

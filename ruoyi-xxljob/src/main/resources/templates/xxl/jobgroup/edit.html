@@ -1,0 +1,107 @@
+<!DOCTYPE HTML>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<meta charset="utf-8">
+<head>
+    <th:block th:include="include :: header('修改执行器')" />
+</head>
+<body class="white-bg">
+<div class="wrapper wrapper-content animated fadeInRight ibox-content">
+    <form class="form-horizontal m" id="form-jobgroup-edit" th:object="${xxlJobGroup}">
+        <input id="id" name="id" th:field="*{id}" type="hidden">
+        <div class="form-group">
+            <label class="col-sm-3 control-label">AppName<font color="red">*</font></label>
+            <div class="col-sm-8">
+                <input id="appname" name="appname" th:field="*{appname}"
+                       class="form-control" type="text">
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="col-sm-3 control-label">名称<font color="red">*</font></label>
+            <div class="col-sm-8">
+                <input id="title" name="title" th:field="*{title}"
+                       class="form-control" type="text">
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="col-sm-3 control-label">注册方式<font color="red">*</font></label>
+            <div class="col-sm-8">
+                <div class="radio-box">
+                    <input type="radio"  name="addressType" id="addressType1"  value="0" th:field="*{addressType}"><label th:for="addressType1" th:text="自动注册"></label>
+                </div>
+                <div class="radio-box">
+                    <input type="radio"  name="addressType" id="addressType2" value="1" th:field="*{addressType}"> <label th:for="addressType2" th:text="手动录入"></label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="col-sm-3 control-label">机器地址<font color="red">*</font></label>
+            <div class="col-sm-8">
+                <textarea id="addressList" name="addressList" class="form-control"
+                     style="background-color:#eee; width: 100%; height: 100px; font-size: 14px; line-height: 15px; border: 1px solid #dddddd; padding: 5px;"
+                >[[*{addressList}]]</textarea>
+            </div>
+        </div>
+    </form>
+</div>
+<div th:include="include::footer"></div>
+<script type="text/javascript">
+    var prefix = ctx + "xxl/jobgroup";
+
+    jQuery.validator.addMethod("myValid01", function(value, element) {
+        var length = value.length;
+        var valid = /^[a-z][a-zA-Z0-9-]*$/;
+        return this.optional(element) || valid.test(value);
+    }, '限制以小写字母开头，由小写字母、数字和中划线组成');
+    $("#form-jobgroup-add").validate({
+        rules : {
+            appName : {
+                required : true,
+                rangelength : [ 4, 64 ],
+                myValid01 : true
+            },
+            title : {
+                required : true,
+                rangelength : [ 4, 12 ]
+            }
+        },
+        messages : {
+            appName : {
+                required : '请输入' + "AppName",
+                rangelength : 'AppName长度限制为4~64',
+                myValid01 : '限制以小写字母开头，由小写字母、数字和中划线组成'
+            },
+            title : {
+                required : '请输入' + '名称',
+                rangelength : '名称长度限制为4~12'
+            }
+        }
+    });
+
+    function submitHandler() {
+        if ($.validate.form()) {
+            $.operate.save(prefix + "/edit", $('#form-jobgroup-edit').serialize());
+        }
+    }
+
+    function addressTypeChange(){
+        var $addressType = $("input[name='addressType']:checked").val();
+        var $addressList = $( "#addressList");
+        if ($addressType == 0) {
+            $addressList.css("background-color", "#eee");	// 自动注册
+            $addressList.attr("readonly","readonly");
+            $addressList.val("");
+        } else {
+            $addressList.css("background-color", "white");
+            $addressList.removeAttr("readonly");
+        }
+    }
+    $(function() {
+        addressTypeChange();
+        // addressType change
+        $("input[name='addressType']+ins").click(function(){
+            addressTypeChange();
+        });
+    });
+</script>
+</body>
+</html>
